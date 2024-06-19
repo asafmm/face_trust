@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Face trustworthiness</title>
+    <meta charset='UTF-8'>
+    <link rel="stylesheet" href="mirror_style.css">
+    <!-- Local copy -->
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/plugin-image-keyboard-response.js"></script>
+    <script src="jspsych/plugin-preload.js"></script>
+    <script src="jspsych/plugin-survey-likert.js"></script>
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/extension-mouse-tracking.js"></script>
+    <script src="jspsych/extension-record-video.js"></script>
+    <script src="jspsych/extension-webgazer.js"></script>
+    <script src="jspsych/plugin-html-slider-response.js"></script>
+    <script src="jspsych/plugin-survey.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" /> 
+  </head>
+  <body></body>
+  <script>
+    var jsPsych = initJsPsych({
+      on_start: function(){
+        console.log('querying content-wrapper')
+        document.querySelector(".jspsych-content-wrapper").addEventListener("contextmenu", 
+        function(ev){
+          ev.preventDefault(); 
+          return false;
+        });
+      }
+    });
+
+    // Initialize timeline
+    var timeline = [];
+
+    jsPsych.data.addProperties({subject_id: sub_id})
+    
+      // Instructions
+      var part2 = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function(){
+            return `
+          <h1>הוראות - קופסא ממוצעת</h1>
+          <p>במטלה הבאה תצטרכו לבחור בכל שלב איזה סט קופסאות אתם מעדיפים.</p>
+          <p>כל סט יכיל 100 קופסאות.</p>
+          <p>לחצו כדי להמשיך.</p>`},
+          choices: [leftButton, rightButton, ' '],
+          data: {part: 'instructions'},
+          post_trial_gap: 700
+      };
+
+      var part2_2 = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function(){
+            return `
+          <p>במהלך כל אחד מהתורות במטלה זו, המחשב <b>יחשב את הממוצע על פני כל 100 הקופסאות</b> שבסט שבחרתם (סט א' או סט ב').
+          <br>כלומר, המחשב יחבר את כל הסכומים שב-100 הקופסאות ואז יחלק את הסכום ב-100.</p>
+          <p>לחצו כדי להמשיך.</p>`},
+          choices: [leftButton, rightButton, ' '],
+          data: {part: 'instructions'},
+          post_trial_gap: 700
+      };
+
+      var part2_3 = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function(){
+            return `
+          <p>בדוגמה שלמטה, אם בחרתם את הסט הימני, המחשב יחבר את הסכומים:
+          <p style="direction: ltr; text-align: left; line-height: 5px">(45 X ₪20 + 55 X ₪0) / 100 = ₪9 </p>
+          <p>אם בחרתם בסט השמאלי, פשוט תקבלו 17 ש"ח מאחר ו- </p>
+          <p style="direction: ltr; text-align: left; line-height: 5px">(100 X ₪17) / 100 = ₪17</p>
+          <br>
+          <div class="table_container">
+            ${createTable(100, 17)} <!--left option-->
+            ${createTable(45, 20)}  <!--right option-->
+          </div>
+          <p>לחצו כדי להמשיך.</p>`},
+          choices: [leftButton, rightButton, ' '],
+          data: {part: 'instructions'},
+          post_trial_gap: 700
+      };
+
+      var example_part2 = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: `
+          <p>בואו נתחיל בדוגמה.
+          <br>לפניכם שני סטים.
+          <br>בחרו את הסט שאתם מעדיפים בעזרת הכפתורים (ימין או שמאל):
+          <div class="table_container">
+            ${createTable(32, 18)}  <!--left option-->
+            ${createTable(100, 6)} <!--right option-->
+          </div>`,
+          choices: [leftButton, rightButton],
+          data: {part: 'example'},
+          post_trial_gap: 700
+      };
+
+      // Part 2 example
+      var example2_part2 = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function(){
+          var example2_response = jsPsych.data.get().last(1).select('response').values;
+          return `<p>יפה מאוד!
+                  <br>בחרתם את הסט ה${example_text = example2_response==leftButton ? "שמאלי" : "ימני"}. נשמע נכון?</p>
+
+                  <p>לחצו כדי להמשיך.</p>`
+          },
+          choices: [leftButton, rightButton, ' '],
+          data: {part: 'example'},
+          post_trial_gap: 700
+      };
+
+      var pre_training = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function(){
+          var example2_response = jsPsych.data.get().last(1).select('response').values;
+          return `<p>בניסוי עצמו יהיו לכם רק כמה שניות לבחור.
+                  <br>כעת נבצע כמה שלבי אימון בדומה לניסוי.</p>
+                  <p>לחצו כדי להמשיך.</p>`
+          },
+          choices: [leftButton, rightButton, ' '],
+          data: {part: 'example'},
+          post_trial_gap: 700
+      };
+
+      var random_order = 0;
+      var left_key = '';
+      var right_key = '';
+      var middle_key = '';
+      var block_i = 1;
+
+      var initial_fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: INITIAL_FIXATION
+    }
+    
+    var fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: function(){
+            // last_rt = jsPsych.data.get().last(1).values()[0].rt;
+            // if (last_rt == null){
+            //   return SOA - MAX_DURATION 
+            // } else {
+            //   return SOA - last_rt
+            // }
+            return ITI
+          }
+    }
+
+    var wait_for_scan_initial = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p style="text-align: center;">מיד מתחילים.</p>`
+      },
+      choices: ['5', 't'],
+      data: {part: 'scan_wait'},
+      post_trial_gap: 0
+    };
+
+    var wait_for_scan_mid = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>הפסקה. מיד נמשיך.</p>`
+      },
+      choices: ['5', 't'],
+      data: {part: 'scan_wait'},
+      post_trial_gap: 0
+    };
+
+    var delay = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '',
+      choices: "NO_KEYS",
+      data: {part: 'delay'},
+      trial_duration: 700
+    }
+    timeline.push(delay)
+    
+    var block_amounts = []
+    var block_probs = []
+    var block_stimuli = []
+
+    var choice_final_fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: INITIAL_FIXATION,
+          on_finish: function() {
+            choice_block_number = choice_block_number + 1;
+            // extract indices of choice part
+            CHOICE_STIMULI_NUMBER = (lotteries_mirrors.length + 1) * 2
+            choice_part_index = []
+            choice_part = jsPsych.data.get().last(CHOICE_STIMULI_NUMBER).select('part').values
+            for (let i = 0; i < CHOICE_STIMULI_NUMBER; i++){
+              if (choice_part[i]=='mirror'){
+                choice_part_index.push(i)
+              }
+            }
+            // save probability and amount of chosen options in choice parts
+            probs = jsPsych.data.get().last(CHOICE_STIMULI_NUMBER).select('choice_prob').values;
+            amounts = jsPsych.data.get().last(CHOICE_STIMULI_NUMBER).select('choice_amount').values;
+            stimuli = jsPsych.data.get().last(CHOICE_STIMULI_NUMBER).select('stimulus').values;
+            stimuli = choice_part_index.map(i => stimuli[i])
+            block_amounts.push(amounts)
+            block_probs.push(probs)
+            block_stimuli.push(stimuli)
+            return choice_block_number
+          }
+    }
+
+      // Choice experiment
+      var choice_trial = {
+        type: jsPsychHtmlKeyboardResponse, 
+        stimulus: function (choice_trial){
+                  random_order = Math.random();
+                  sure_boxes = 100
+                  sure_amount = jsPsych.timelineVariable('Sure Amount')
+                  lottery_boxes = 100*jsPsych.timelineVariable('P(x)')
+                  lottery_amount = jsPsych.timelineVariable('x')
+                  // randomize whether sure amount is on the left
+                  if (random_order > 0.5) {
+                    // sure is left
+                    left_key = 'sure';
+                    right_key = 'lottery';
+                    stim =`
+                    <div class="table_container">
+                      ${createTable(sure_boxes, sure_amount)} <!--left option-->
+                      ${createTable(lottery_boxes, lottery_amount)}<!--right option-->
+                    </div>`
+                  } else {
+                    // lottery is left
+                    left_key = 'lottery';
+                    right_key = 'sure';
+                    stim =`
+                    <div class="table_container">
+                      ${createTable(lottery_boxes, lottery_amount)} <!--left option-->
+                      ${createTable(sure_boxes, sure_amount)}<!--right option-->
+                    </div>`
+                  }
+                  return stim
+          },
+        choices: [leftButton, rightButton],
+        trial_duration: MAX_DURATION,
+        data: {part: 'mirror',
+              actual_choice: '-',
+              actual_EV: '-',
+              prospect: jsPsych.timelineVariable('Prospect'),
+              one_key: function(){ return left_key},// which option is on the left ('1' key)?
+              two_key: function(){ return right_key},// which option is on the right ('2' key)?
+              },
+        on_finish: function(data) {
+                var response = jsPsych.data.get().filter({part: 'mirror'}).last(1).select('response').values;
+                if (response == leftButton){ 
+                  data.actual_choice = left_key;
+                  if (left_key=='lottery'){
+                    data.choice_prob = jsPsych.timelineVariable('P(x)');
+                    data.choice_amount = jsPsych.timelineVariable('x');
+                    data.actual_EV = jsPsych.timelineVariable('EV');
+                  }
+                  else{
+                    data.choice_prob = 100;
+                    data.choice_amount = jsPsych.timelineVariable('Sure Amount');
+                    data.actual_EV = jsPsych.timelineVariable('Sure Amount');
+                  }
+                }
+                if (response == rightButton){ 
+                  data.actual_choice =  right_key;
+                  if (right_key=='lottery'){
+                    data.choice_prob = jsPsych.timelineVariable('P(x)');
+                    data.choice_amount = jsPsych.timelineVariable('x');
+                    data.actual_EV = jsPsych.timelineVariable('EV');
+                  }
+                  else{
+                    data.choice_prob = 100;
+                    data.choice_amount = jsPsych.timelineVariable('Sure Amount');
+                    data.actual_EV = jsPsych.timelineVariable('Sure Amount');
+                  }
+                }
+          }
+      }
+    
+      var choice_part = {
+        timeline: [choice_trial, fixation],
+        timeline_variables: lotteries_mirrors_examples,
+        // timeline_variables: lotteries_mirrors.slice(0, 2),
+        randomize_order: true
+      }
+
+      var manual_pause = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>בלוק אימון נגמר. מוכנים?</p>`
+      },
+      choices: [' '],
+      data: {part: 'manual_scan_wait'},
+      post_trial_gap: 0
+    };
+    
+    timeline.push(part2);
+    timeline.push(part2_2);
+    timeline.push(part2_3);
+    timeline.push(example_part2);
+    timeline.push(example2_part2);
+    timeline.push(pre_training);
+    // 1st block
+    timeline.push(fixation)
+    timeline.push(choice_part)
+    timeline.push(manual_pause)
+    
+    timeline.push(delay)
+    
+    jsPsych.run(timeline);
+  </script>
+</html>

@@ -752,12 +752,12 @@
       trial_duration: MAX_DURATION
     }
     
-    var evaluation_part = {
-      timeline: [passive_view, evaluation_trial, fixation],
-      timeline_variables: evaluation_stimuli,
-      // timeline_variables: evaluation_stimuli.slice(0, 2),
-      randomize_order: true
-    }
+      var evaluation_part = {
+        timeline: [passive_view, evaluation_trial, fixation],
+        timeline_variables: evaluation_stimuli,
+        // timeline_variables: evaluation_stimuli.slice(0, 2),
+        randomize_order: true
+      }
 
     var manual_pause = {
       type: jsPsychHtmlKeyboardResponse,

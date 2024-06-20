@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Face trustworthiness</title>
+    <title>Face first impression</title>
     <meta charset='UTF-8'>
     <link rel="stylesheet" href="decoy_style.css">
     <!-- Local copy -->
@@ -31,6 +31,9 @@
       }
     });
 
+    function random_integer(min, max){
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
     // Initialize timeline
     var timeline = [];
@@ -39,14 +42,13 @@
     var today = new Date()
     var date_string = today.toLocaleDateString("en-GB").replace(/\//g, '-') // creates date string with dd-mm-yyyy
     const INITIAL_FIXATION = 1000
-    const MAX_RESPONSE = 6;
+    const SCALE_START = -5;
+    const MAX_RESPONSE = 10;
     const WTP_BAR_SIZE = 800;
     const SCLAESIZE = 900;
-    const VIEW_TIME = 1000;
-    const SOA = 11000;
-    const MAX_DURATION = 5000;
-    const FIXATION_TIME = 1000;
-    const JITTER = 500;
+    const FIXATION_TIME = 500;
+    const JITTER = 250;
+    const LABELS = ['-5', '-4', '-3', '-2', '-1', '0', '1', '2', '3', '4', '5'];
 
     jsPsych.data.addProperties({subject_id: sub_id})
 
@@ -161,52 +163,151 @@
         document.querySelector(".jspsych-content-wrapper").addEventListener("contextmenu", function(ev){ev.preventDefault(); return false;});
         },
         stimulus: `
-          <h1>Welcome to the experiment!</h1>
-          <p>In this experiment, you will be asked to rate the trustworthiness of faces.
+          <h1>Welcome!</h1>
+          <p>In this task, you will be asked to evaluate the trustworthiness of different people.
           <br><br>Please click to continue.</p>`,
         choices: [' '],
         data: {part: 'example'},
         post_trial_gap: 250, 
         allow_click: true
     };
-    // timeline.push(welcome);
+    timeline.push(welcome);
 
-    var initial_fixation = {
+    var fixation = {
           type: jsPsychHtmlKeyboardResponse,
           stimulus: '<p style="text-align: center;">+</p>',
           choices: 'NO_KEYS',
           data: {part: 'fixation'},
-          trial_duration: INITIAL_FIXATION
+          trial_duration: FIXATION_TIME
     }
-    // timeline.push(initial_fixation);
 
     var example_part1 = {
         type: jsPsychHtmlSliderResponse,
         stimulus: `
-        <p style="font-size: 42px;">Let's start with an example:
-        <br>Look at the face below, and evaluate how much you trust this person on a scale from 1 to 7.
-        <br>Think about how much you would trust this person to return your lost wallet, or to watch for your house when you are away.
-        <br>1 - You do not trust this person at all
-        <br>7 - You trust this person completely
+        <p style="font-size: 32px;">Let's start with an example:
+        <br>Look at the face below, and rate how much you trust this person on a scale from -5 to 5.
+        <br><br>For example, think about how much you would trust this person to return your lost wallet, or to watch your house when you are away.
+
+        <br>Move your mouse over the bar and click "Continue" to make your evaluation:</p>
         
-        <br>Move your mouse over the bar and click to make your evaluation:</p>
-        
-        <span><img src='../stimuli/white_male_faces/CM1_1.jpg', width="300"></span>`
+        <span><img src='../stimuli/white_male_faces/CM1_1.jpg', width="250"></span>`
         ,
         choices: [' '],
         data: {part: 'example'},
-        require_movement: true,
+        require_movement: false,
+        slider_start: random_integer(0, MAX_RESPONSE),
         max: MAX_RESPONSE,
         slider_width: WTP_BAR_SIZE,
-        labels: ['1', '2', '3', '4', '5', '6', '7'],
+        labels: LABELS,
+        scale_start: SCALE_START,
         post_trial_gap: 250
     };
     timeline.push(example_part1);
 
-    var manual_pause = {
+    var example_response = 0;
+    // Post-example 1
+    var post_example1 = {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: function(){
-        return `<p>Done.</p>`
+        example_response = jsPsych.data.get().last(1).select('response').values;
+        example_response = parseInt(example_response);
+        return `<p>Nice work!
+                <br>You ranked this person's trustworthniess as ${example_response} on a scale from -5 to 5.
+                <br>Sounds about right?
+                <br>Let's try it with another one.
+                <br><br>Click to continue.</p>`
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(post_example1);
+
+    timeline.push(fixation);
+    var example2 = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: `
+        <p style="font-size: 32px;">Here is another example. 
+        <br>How trustworthy does this person look to you?</p>
+        
+        <span><img src='../stimuli/white_male_faces/CM2_1.jpg', width="250"></span>`
+        ,
+        choices: [' '],
+        data: {part: 'example'},
+        require_movement: false,
+        slider_start: random_integer(0, MAX_RESPONSE),
+        max: MAX_RESPONSE,
+        slider_width: WTP_BAR_SIZE,
+        labels: LABELS,
+        scale_start: SCALE_START,
+        post_trial_gap: 250
+    };
+    timeline.push(example2);
+
+    var example_response2 = 0;
+    // Post-example 2
+    var post_example2 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        example_response2 = jsPsych.data.get().last(1).select('response').values;
+        example_response2 = parseInt(example_response2);
+        return `<p>Alright!
+                <br>You ranked this other person's trustworthniess as ${example_response2} on a scale from -5 to 5.
+                <br>It seems you get the idea.
+                <br><br>Click to continue.</p>`
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(post_example2);
+
+    var pre_task = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>We will now begin the real task.
+          <br>You will see faces, one after the other, and you are asked to rank their trustworthiness.
+          <br>This should take approximately 7-10 minutes.
+          <br><br>Click to start the real task.</p>`
+      },
+      choices: [' '],
+      data: {part: 'manual_scan_wait'},
+      post_trial_gap: 250
+    };
+    timeline.push(pre_task);
+
+    var trial = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function(){
+          return `<span><img src='${jsPsych.timelineVariable(0)}', width="250"></span>`
+        }
+        ,
+        data: {part: 'task',
+               face: jsPsych.timelineVariable(0)},
+        require_movement: false,
+        slider_start: random_integer(0, MAX_RESPONSE),
+        max: MAX_RESPONSE,
+        slider_width: WTP_BAR_SIZE,
+        labels: LABELS,
+        scale_start: SCALE_START
+    };
+
+    var real_task = {
+      timeline: [trial, fixation],
+      timeline_variables: preload.images,
+      // timeline_variables: evaluation_stimuli.slice(0, 2),
+      randomize_order: true
+    }
+    timeline.push(fixation);
+    timeline.push(real_task);
+
+    var finish_screen = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>Well done! You finished the task.
+              <br>Thank you for your participation!</p>`
       },
       choices: [' '],
       data: {part: 'manual_scan_wait'},
@@ -215,7 +316,7 @@
         jsPsych.data.get().localSave('csv', `final_${date_string}_${sub_id}.csv`);
       }
     };
-    timeline.push(manual_pause);
+    timeline.push(finish_screen);
 
     jsPsych.run(timeline);
   </script>

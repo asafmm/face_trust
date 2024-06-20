@@ -83,6 +83,11 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
             pretty_name: "Hide the slider",
             default: false,
           },
+          scale_start: {
+            type: jspsych.ParameterType.INT,
+            pretty_name: "Value of the first label",
+            default: 0,
+          },
           /** If true, trial will end when user makes a response. */
           response_ends_trial: {
               type: jspsych.ParameterType.BOOL,
@@ -204,13 +209,18 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
             function click_func() {
                 var endTime = performance.now();
                 response.rt = Math.round(endTime - startTime);
-                // valueAsNumber + 1 because the correct scale is 1 to 7 and the slider is 0 to 6
-                response.response = display_element.querySelector("#jspsych-html-slider-response-response").valueAsNumber + 1;
+                // adjust the scale to start at the correct value
+                response.response = display_element.querySelector("#jspsych-html-slider-response-response").valueAsNumber + trial.scale_start;
                 if (trial.response_ends_trial) {
                     end_trial();
                 }
             };
+            function enable_button() {
+                document.getElementById("jspsych-html-slider-response-next").disabled = false;
+            }
 
+            document.getElementById("jspsych-html-slider-response-response").addEventListener("change", function() {enable_button()});
+            
             var button = document
                 .getElementById("jspsych-html-slider-response-next");
             button.addEventListener("click", click_func);

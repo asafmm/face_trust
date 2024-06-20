@@ -106,10 +106,9 @@ var jsPsychHtmlKeyboardResponse = (function (jspsych) {
               this.jsPsych.finishTrial(trial_data);
           };
           function click_func() {
-            console.log("click detected: " + WTP_amount)
             var endTime = performance.now();
             // response.rt = Math.round(endTime - startTime);
-            response.key = 1;
+            response.key = ' ';
             end_trial();
           };
           if (trial.allow_click){

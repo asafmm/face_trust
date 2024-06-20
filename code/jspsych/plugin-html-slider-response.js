@@ -157,12 +157,12 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
           }
           /* Asaf removed the submit button */
           // add submit button
-        //   html +=
-        //       '<button id="jspsych-html-slider-response-next" class="jspsych-btn" ' +
-        //           (trial.require_movement ? "disabled" : "") +
-        //           ">" +
-        //           trial.button_label +
-        //           "</button>";
+          html +=
+              '<button id="jspsych-html-slider-response-next" class="jspsych-btn" ' +
+                  (trial.require_movement ? "disabled" : "") +
+                  ">" +
+                  trial.button_label +
+                  "</button>";
           display_element.innerHTML = html;
           var response = {
               rt: null,
@@ -193,12 +193,12 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
                 };
                 display_element.innerHTML = "";
                 /* Asaf adds that in end of trial stop listening to clicks */
-                document
-                    .querySelector(".jspsych-content-wrapper")
-                    .removeEventListener("click", click_func, false);
-                document
-                    .querySelector(".jspsych-content-wrapper")
-                    .removeEventListener("contextmenu", click_func, false);
+                // document
+                //     .querySelector(".jspsych-content-wrapper")
+                //     .removeEventListener("click", click_func, false);
+                // document
+                //     .querySelector(".jspsych-content-wrapper")
+                //     .removeEventListener("contextmenu", click_func, false);
                 // next trial
                 this.jsPsych.finishTrial(trialdata);
             };
@@ -221,16 +221,16 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
             }
           };
           /* Asaf added mouse tracking all over page */
-          document
-              .querySelector(".jspsych-content-wrapper")
-              .addEventListener("mousemove", track_mouse);
+        //   document
+        //       .querySelector(".jspsych-content-wrapper")
+        //       .addEventListener("mousemove", track_mouse);
           /* Asaf added that anywhere you click will end the trial */
-          document
-              .querySelector(".jspsych-content-wrapper")
-              .addEventListener("click", click_func)
-          document
-              .querySelector(".jspsych-content-wrapper")
-              .addEventListener("contextmenu", click_func);
+        //   document
+        //       .querySelector(".jspsych-content-wrapper")
+        //       .addEventListener("click", click_func)
+        //   document
+        //       .querySelector(".jspsych-content-wrapper")
+        //       .addEventListener("contextmenu", click_func);
           if (trial.stimulus_duration !== null) {
               this.jsPsych.pluginAPI.setTimeout(() => {
                   display_element.querySelector("#jspsych-html-slider-response-stimulus").style.visibility = "hidden";

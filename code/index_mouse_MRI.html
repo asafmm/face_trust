@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decision-making experiment</title>
+    <meta charset='UTF-8'>
+    <script src="stimuli_binary_v3.js"></script>
+    <script src="stimuli_trinary_v3.js"></script>
+    <script src="evaluation_stimuli_v3.js"></script>
+    <link rel="stylesheet" href="decoy_style.css">
+    <!-- Local copy -->
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/plugin-image-keyboard-response.js"></script>
+    <script src="jspsych/plugin-preload.js"></script>
+    <script src="jspsych/plugin-survey-likert.js"></script>
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/extension-mouse-tracking.js"></script>
+    <script src="jspsych/extension-record-video.js"></script>
+    <script src="jspsych/extension-webgazer.js"></script>
+    <script src="jspsych/plugin-html-slider-response.js"></script>
+    <script src="jspsych/plugin-survey.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" /> 
+  </head>
+  <body></body>
+  <script>
+    // hide cursor
+    // document.body.style.cursor = 'none';
+
+    function getCursorPosition(event) {
+      bar_dimensions = document.getElementById("jspsych-html-slider-response-response").getBoundingClientRect()
+      left_x = bar_dimensions.left
+      right_x = bar_dimensions.right
+      WTP_amount = Math.round(WTP_MAX - (right_x - event.clientX)/ (WTP_BAR_SIZE/WTP_MAX))
+      if (WTP_amount < 0){
+        // if the mouse is beyond left side of slider, set to 0
+        WTP_amount = 0
+      } 
+      if (WTP_amount > WTP_MAX){
+        // if mouse is beyond right side of slider set to MAX
+        WTP_amount = WTP_MAX
+      }
+      wtp_div = document.getElementById("c_p_y")
+      if (wtp_div != null){
+        wtp_div.textContent = '₪'+WTP_amount;
+      }
+      document.getElementById("jspsych-html-slider-response-response").value = WTP_amount;
+    }
+
+    function randomSliderStarter(){
+      var random_slider_start =  Math.floor(Math.random() * (WTP_MAX + 1));
+      console.log("random starter: ", random_slider_start)
+      WTP_amount = random_slider_start;
+      return random_slider_start
+    }
+
+    function random_integer(min, max){
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    
+    const WTP_MAX = 7;
+    const WTP_BAR_SIZE = 800;
+    const SCLAESIZE = 900;
+    const VIEW_TIME = 1000;
+    const SOA = 11000;
+    const MAX_DURATION = 5000;
+    const FIXATION_TIME = 1000;
+    const INITIAL_FIXATION = 3000;
+    const JITTER = 500;
+    
+    var WTP_amount = 0;
+    var bdm_block_number = 0;
+    var random_cost = 0;
+    var choice_block_number = 0;
+    var sub_id = crypto.randomUUID()
+    var today = new Date()
+    var date_string = today.toLocaleDateString("en-GB").replace(/\//g, '-') // creates date string with dd-mm-yyyy
+    
+    var jsPsych = initJsPsych({
+      on_start: function(){
+        console.log('querying content-wrapper')
+        document.querySelector(".jspsych-content-wrapper").addEventListener("contextmenu", function(ev){ev.preventDefault(); return false;});
+      },
+      on_finish: function(){
+        jsPsych.data.get().localSave('csv', `final_${date_string}_${sub_id}.csv`);
+      }
+    });
+
+    // Initialize timeline
+    var timeline = [];
+    var bdm_block_responses = []
+    var bdm_block_stimuli = []
+    var bdm_block_amounts = []
+    var bdm_block_probs = [] 
+
+    jsPsych.data.addProperties({subject_id: sub_id})
+    
+    var preload = {
+      type: jsPsychPreload,
+      images: ['img/hebrew_scale.png', 'img/A.png', 'img/D.png', 'img/S.png']
+    }
+    timeline.push(preload);
+
+    // Welcome screen
+    var welcome = {
+        type: jsPsychHtmlKeyboardResponse,
+        on_start: function(){
+        document.querySelector(".jspsych-content-wrapper").addEventListener("contextmenu", function(ev){ev.preventDefault(); return false;});
+        },
+        stimulus: `
+          <h1>שלום וברוכים הבאים!</h1>
+          <p>לפניכם ניסוי בקבלת החלטות.
+          <br><br>לחצו על העכבר כדי להמשיך.</p>`,
+        choices: [' '],
+        data: {part: 'example'},
+        on_finish: function(data){
+          data.response = WTP_amount;
+        },
+        post_trial_gap: 250, 
+        allow_click: true
+    };
+    timeline.push(welcome);
+
+    // Evaluation experiment
+        var initial_fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: INITIAL_FIXATION
+    }
+
+    // Part 1 instructions
+    var part1 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+        <h1>הוראות</h1>
+        <p>בקרוב יוצגו בפניכם הגרלות.
+        <br>עליכם לבחור את המחיר המירבי שתהיו מוכנים לשלם כדי להשתתף בהגרלה שתוצג.
+        <br>יש לכם תקציב של ₪80 לכל הגרלה. 
+        <br>נסו להעריך כל הגרלה בנפרד ולחשוב כמה היא שווה עבורכם, ₪80 זמינים לכל הגרלה בנפרד.
+        <br><br>לחצו על העכבר כדי להמשיך.</p>`,
+        choices: [' '],
+        data: {part: 'instructions'},
+        allow_click: true,
+        post_trial_gap: 100
+    };
+    timeline.push(part1);
+
+    var part1_cont = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+        <p>בסוף הניסוי, המחשב יבחר את אחת ההגרלות ויקבע מחיר לכרטיס עבורה. 
+        <br>במידה והמחיר שבחרתם נמוך מהמחיר שנבחר על ידי המחשב, לא תשתתפו בהגרלה ותשארו עם מלוא התקציב.
+        <br>במידה והמחיר שבחרתם גבוה מהמחיר שנבחר על ידי המחשב, תשלמו את המחיר שנקבע ותשתתפו בהגרלה.
+        <br><br>לחצו על העכבר כדי להמשיך.</p>`,
+        choices: [' '],
+        data: {part: 'instructions'},
+        allow_click: true,
+        post_trial_gap: 100
+    };
+    timeline.push(part1_cont);
+
+    // Part 1 example
+    var example_part1 = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: `
+        <p style="font-size: 42px;">נתחיל עם דוגמא: 
+        <br>ההגרלה מטה מציעה 65% סיכוי לזכות ב-₪40 
+        <br>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;35% סיכוי לזכות ב-₪0.
+        <br><br>מה המחיר המירבי שתהיו מוכנים לשלם על כרטיס להגרלה זו בין 0 ל-₪${WTP_MAX}?
+        <br>הזיזו את העכבר על פני המלבן ולחצו כדי לבצע בחירה.</p>
+        
+        <p style="text-align: center;">₪40<br>65%</p>
+
+        <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+        ,
+        choices: [' '],
+        data: {part: 'example'},
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+          data.response = WTP_amount;
+        },
+        post_trial_gap: 250
+    };
+    timeline.push(example_part1);
+
+    var example_response = 0;
+    // Post-example 1
+    var post_example1 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        example_response = jsPsych.data.get().last(1).select('response').values;
+        example_response = parseInt(example_response);
+        return `<p>יפה מאוד!
+                <br> בחרתם שתהיו מוכנים לשלם ₪${example_response} כדי להשתתף בהגרלה:
+                <br><p style="text-align: center;">₪40<br>65%</p>
+                <p>נשמע נכון?
+                <br>נניח שהגרלה זו נבחרה בסוף הניסוי.
+                <br>כעת המחשב יקבע מחיר עבורה באקראי.
+                <br>לחצו על העכבר להמשך.</p>`
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(post_example1);
+
+    var bdm_example = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>המחשב קבע מחיר: ₪${example_bdm_random = random_integer(example_response+1, 80) }
+                <br>ואתם בחרתם לשלם לכל היותר: ₪${example_response}
+                <br><br>מכיוון שהמחיר שבחרתם נמוך מהמחיר שנקבע, לא תתשתתפו בהגרלה.
+                <br>במקרה כזה, בסוף הניסוי תקבלו את כל התקציב ההתחלתי של ₪80.
+                <br><br>לחצו על העכבר להמשך.</p>`
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(bdm_example);
+
+    // Example2
+    var example2_part1 = {
+      type: jsPsychHtmlSliderResponse,
+      stimulus: function(){
+        var example_response = jsPsych.data.get().last(1).select('response').values;
+        return `<p style="font-size: 42px;">הנה עוד דוגמא:
+                <br>ההגרלה מטה מציעה 35% סיכוי לזכות ב-₪18 
+                <br>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;65% סיכוי לזכות ב-₪0.</p>
+        
+                <p style="text-align: center;">₪18<br>35%</p>
+                <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      require_movement: true,
+      max: WTP_MAX,
+      slider_width: WTP_BAR_SIZE,
+      slider_start: randomSliderStarter,
+      labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+      on_finish: function(data){
+          data.response = WTP_amount;
+        },
+      post_trial_gap: 250
+    };
+    timeline.push(example2_part1);
+
+    // Example complete
+    var example2_response = 0
+    var post_example = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        example2_response = jsPsych.data.get().last(1).select('response').values;
+        return `<p>הייתם מוכנים לשלם  ₪${example2_response} כדי להשתתף בהגרלה:
+                <p style="text-align: center;">₪18<br>35%</p>
+                <p>כעת נניח שהמחשב בחר את ההגרלה הזו בסוף הניסוי, וקבע עבורה מחיר.
+                <br><br>לחצו על העכבר כדי להמשיך.</p>`
+      },
+      choices: [' '],
+      data: {part: 'instructions'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(post_example);
+
+    var bdm_example2 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        example_bdm_random = random_integer(0, parseInt(example2_response))
+        if (example_bdm_random == parseInt(example2_response)){ 
+          return `<p>המחשב קבע מחיר להגרלה: ₪${example_bdm_random}
+                <br>ואתם בחרתם לשלם לכל היותר: ₪${example2_response}
+                <br><br>כעת המחיר שנקבע זהה לזה שבחרתם, אז תשלמו את המחיר שקבע המחשב (₪${example_bdm_random}) ותשתתפו בהגרלה.
+                <br>במקרה כזה, תסיימו את הניסוי עם תקציב של ₪${80 - example_bdm_random} ועם סיכוי לזכות ב-₪18 נוספים מההגרלה.
+                <br>כלומר, תוכלו לקבל ₪${80 - example_bdm_random} אם לא תזכו בהגרלה, או ₪${80 - example_bdm_random + 18} אם תזכו בהגרלה.
+                <br><br>לחצו על העכבר להמשך.</p>`
+        } else {
+          return `<p>המחשב קבע מחיר להגרלה: ₪${example_bdm_random}`+//>5 ? parseInt(example2_response)-3 : 1 }
+                `<br>ואתם בחרתם לשלם לכל היותר: ₪${example2_response}
+                <br><br>כעת המחיר שנקבע נמוך מזה שבחרתם, אז תשלמו את המחיר שקבע המחשב (₪${example_bdm_random}) ותשתתפו בהגרלה.
+                <br>במקרה כזה, תסיימו את הניסוי עם תקציב של ₪${80 - example_bdm_random} ועם סיכוי לזכות ב-₪18 נוספים מההגרלה.
+                <br>כלומר, תוכלו לקבל ₪${80 - example_bdm_random} אם לא תזכו בהגרלה, או ₪${80 - example_bdm_random + 18} אם תזכו בהגרלה.
+                <br><br>לחצו על העכבר להמשך.</p>`
+        }
+        
+      },
+      choices: [' '],
+      data: {part: 'example'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(bdm_example2);
+
+    // Example complete
+    var example3_part1 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>במהלך הניסוי, קודם תראו את ההגרלה ורק לאחר מכן תוכלו לבחור.
+                <p>כמו כן, יהיו לכם מספר שניות מוגבל להגיב.
+                <p>בואו נראה איך זה נראה.
+                <br>לחצו על העכבר כדי להתחיל באימון.</p>`
+      },
+      choices: [' '],
+      data: {part: 'instructions'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(example3_part1);
+    timeline.push(initial_fixation);
+
+      // Example complete
+      var example3_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪21<br>65%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example3_view);
+
+    var example3_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪21<br>65%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example3_choice);
+
+    var post_example3 = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        example3_response = jsPsych.data.get().last(1).select('response').values[0];
+        console.log(example3_response);
+        if (example3_response == null)
+        {
+            return `<p>לא הגבתם בזמן המוקצב לתגובה. 
+                <br>נסו להגיב מהר יותר בפעם הבאה.
+                <br><br>לחצו על העכבר כדי להמשיך באימון.</p>`
+        } else {
+            return `<p>יפה. הפעם בחרתם לשלם לכל היותר ₪${example3_response}.
+                <br><br>לחצו על העכבר כדי להמשיך באימון.</p>`
+        }
+        
+      },
+      data: {part: 'instructions'},
+      post_trial_gap: 250, 
+      allow_click: true
+    };
+    timeline.push(post_example3);
+
+    var example4_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪60<br>20%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(initial_fixation);
+    timeline.push(example4_view);
+
+    var example4_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪60<br>20%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example4_choice);
+
+    var example5_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪14<br>75%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(initial_fixation);
+    timeline.push(example5_view);
+
+    var example5_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪14<br>75%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example5_choice);
+    
+    var example6_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪35<br>55%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(initial_fixation);
+    timeline.push(example6_view);
+
+    var example6_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪35<br>55%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example6_choice);
+
+    var example7_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪74<br>45%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(initial_fixation);
+    timeline.push(example7_view);
+
+    var example7_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪74<br>45%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example7_choice);
+
+    var example8_view = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪27<br>15%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+          },
+        data: {part: 'viewing'},
+        hide_slider: true,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        on_finish: function(data){
+            data.response = WTP_amount;
+          },
+        trial_duration: VIEW_TIME,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(initial_fixation);
+    timeline.push(example8_view);
+
+    var example8_choice = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: function (){
+                    return `
+                    <p style="text-align: center;">₪27<br>15%</p>
+                    <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+          },
+        data: {part: 'instructions'},
+        hide_slider: false,
+        require_movement: true,
+        max: WTP_MAX,
+        slider_width: WTP_BAR_SIZE,
+        slider_start: randomSliderStarter,
+        labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+        trial_duration: MAX_DURATION,
+        data: {part: 'instructions'},
+        post_trial_gap: 250
+    };
+    timeline.push(example8_choice);
+
+    var pre_start = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>כעת נתחיל את הניסוי.
+                <br><br>אתם תראו הגרלות ותתבקשו לבחור כמה תהיו מוכנים לשלם כדי להשתתף בהן.
+                <br>יש לכם תקציב של ₪80 עבור כל הגרלה.
+                <br>בסוף הניסוי הגרלה אחת תבחר באקראי ותשוחק.
+                <br><br>לחצו על העכבר כדי להתחיל את הניסוי.</p>`
+      },
+      choices: [' '],
+      data: {part: 'instructions'},
+      allow_click: true,
+      post_trial_gap: 250
+    };
+    timeline.push(pre_start);
+
+    var block_responses = []
+
+    var wait_for_scan_initial = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>מיד מתחילים.</p>`
+      },
+      choices: ['5', 't'],
+      data: {part: 'scan_wait'},
+      post_trial_gap: 0
+    };
+
+    var wait_for_scan_mid = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>הפסקה. מיד נמשיך.</p>`
+      },
+      choices: ['5', 't'],
+      data: {part: 'scan_wait'},
+      post_trial_gap: 0
+    };
+
+    var final_fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: INITIAL_FIXATION,
+          on_finish: function() {
+            bdm_block_number = bdm_block_number + 1;
+            // extract indices of choice part
+            bdm_part_index = []
+            bdm_part = jsPsych.data.get().last(94).select('part').values
+            for (let i = 0; i < 94; i++){
+              if (bdm_part[i]=='evaluation'){
+                bdm_part_index.push(i)
+              }
+            }
+            // save probability and amount of chosen options in choice parts
+            bdm_probs = jsPsych.data.get().last(94).select('prob').values;
+            bdm_amounts = jsPsych.data.get().last(94).select('amount').values;
+            bdm_responses = jsPsych.data.get().last(94).select('response').values;
+            bdm_responses = bdm_part_index.map(i => bdm_responses[i])
+            bdm_stimuli = jsPsych.data.get().last(94).select('stimulus').values;
+            bdm_stimuli = bdm_part_index.map(i => bdm_stimuli[i])
+            bdm_block_responses.push(bdm_responses)
+            bdm_block_amounts.push(bdm_amounts)
+            bdm_block_probs.push(bdm_probs)
+            bdm_block_stimuli.push(bdm_stimuli)
+            return bdm_block_number
+          }
+    }
+    
+    var fixation = {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: '<p style="text-align: center;">+</p>',
+          choices: 'NO_KEYS',
+          data: {part: 'fixation'},
+          trial_duration: function(){
+            last_rt = jsPsych.data.get().last(1).values()[0].rt;
+            plus_minus = 1 + -2 * (Math.random()>0.5)
+            random_jitter = Math.random()*JITTER
+            if (last_rt == null){
+              return SOA - MAX_DURATION 
+            } else {
+              return SOA - last_rt
+            }
+          }
+    }
+
+    var passive_view = {
+      type: jsPsychHtmlSliderResponse,
+      stimulus: function (){
+                if (jsPsych.timelineVariable('lottery_id')==0){
+                  return ``
+                } else {
+                  return `
+                  <p style="text-align: center;">₪${jsPsych.timelineVariable('amount')}
+                                                <br>${jsPsych.timelineVariable('prob')}%</p>
+                  <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>&ensp;</p>`
+                }
+        },
+      choices: 'NO_KEYS',
+      hide_slider: true,
+      require_movement: true,
+      max: WTP_MAX,
+      slider_width: WTP_BAR_SIZE,
+      slider_start: randomSliderStarter,
+      labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+      on_finish: function(data){
+          data.response = '-';
+        },
+      data: {part: 'viewing',
+             ID: jsPsych.timelineVariable('lottery_id'), // ID of the lottery
+             set_ID: jsPsych.timelineVariable('set') // for which set does this lottery belong?
+            },
+      trial_duration: VIEW_TIME
+    }
+
+    var evaluation_trial = {
+      type: jsPsychHtmlSliderResponse,
+      stimulus: function (){
+                if (jsPsych.timelineVariable('lottery_id')==0){
+                  return ``
+                } else {
+                  return `
+                  <p style="text-align: center;">₪${jsPsych.timelineVariable('amount')}
+                                                <br>${jsPsych.timelineVariable('prob')}%</p>
+                  <p id="wtp" style="text-align:center; margin-top: 0px; margin-bottom: 0px; font-size: 40px";>מוכנים לשלם: <span id="c_p_y"></span></p>`
+                }
+        },
+      hide_slider: function(){
+           if (jsPsych.timelineVariable('lottery_id')==0){
+             return true
+           } else {
+             return false
+           }
+      },
+      require_movement: true,
+      max: WTP_MAX,
+      slider_width: WTP_BAR_SIZE,
+      slider_start: randomSliderStarter,
+      labels: ['₪0', '₪20', '₪40', '₪60', '₪80'],
+      on_finish: function(data){
+             data.last_location = WTP_amount;
+        },
+      data: {part: 'evaluation',
+             ID: jsPsych.timelineVariable('lottery_id'), // ID of the lottery
+             set_ID: jsPsych.timelineVariable('set'), // for which set does this lottery belong?
+             prob: jsPsych.timelineVariable('prob'),
+             amount: jsPsych.timelineVariable('amount'),
+            },
+      trial_duration: MAX_DURATION
+    }
+    
+    var evaluation_part = {
+      timeline: [passive_view, evaluation_trial, fixation],
+      timeline_variables: evaluation_stimuli,
+      // timeline_variables: evaluation_stimuli.slice(0, 2),
+      randomize_order: true
+    }
+
+    var manual_pause = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>שלב נגמר.</p>`
+      },
+      choices: [' '],
+      data: {part: 'manual_scan_wait'},
+      post_trial_gap: 0,
+      on_finish: function(){
+        jsPsych.data.get().localSave('csv', `final_${date_string}_${sub_id}.csv`);
+      }
+    };
+
+    timeline.push(wait_for_scan_initial)
+    // run 1
+    timeline.push(initial_fixation)
+    timeline.push(evaluation_part)
+    timeline.push(final_fixation)
+    timeline.push(manual_pause)
+    // run 2
+    timeline.push(wait_for_scan_mid)
+    timeline.push(initial_fixation)
+    timeline.push(evaluation_part)
+    timeline.push(final_fixation)
+    timeline.push(manual_pause)
+    // run 3
+    timeline.push(wait_for_scan_mid)
+    timeline.push(initial_fixation)
+    timeline.push(evaluation_part)
+    timeline.push(final_fixation)
+    timeline.push(manual_pause)
+    // run 4
+    timeline.push(wait_for_scan_mid)
+    timeline.push(initial_fixation)
+    timeline.push(evaluation_part)
+    timeline.push(final_fixation)
+    timeline.push(manual_pause)
+    // run 5
+    timeline.push(wait_for_scan_mid)
+    timeline.push(initial_fixation)
+    timeline.push(evaluation_part)
+    timeline.push(final_fixation)
+    // run 6
+    // timeline.push(wait_for_scan_mid)
+    // timeline.push(initial_fixation)
+    // timeline.push(evaluation_part)
+    // timeline.push(final_fixation)
+
+    var delay = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '',
+      choices: "NO_KEYS",
+      data: {part: 'delay'},
+      trial_duration: 700
+    };
+    timeline.push(delay);
+
+    // Part 1 end
+    var end_part1 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+        <h1>יפה מאוד! סיימתם את חלק 1!</h1>
+        <p>מיד נעבור לחלק 2.</p>
+        <p>לחצו רווח במקלדת כדי להמשיך.</p>`,
+        choices: [' '],
+        data: {part: 'instructions'},
+        post_trial_gap: 50
+    };
+    timeline.push(end_part1);
+
+    jsPsych.run(timeline);
+    
+  </script>
+</html>

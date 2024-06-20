@@ -1,14 +1,14 @@
 body {
-    background-color: #1C1C1C;
+    background-color: #ffffff;
     cursor: none;
 }
 h1 {
     font-size: 70px;
-    text-align: right;
-    direction: rtl;
+    text-align: left;
+    direction: ltr;
 }
 h1.rtl{
-    direction: rtl;
+    direction: ltr;
     max-width: 80%;
 }
 /* tables for mirror task */
@@ -16,13 +16,13 @@ table {
     max-width: 100%;
     border-collapse: collapse;
     width: 40%;
-    direction: rtl;
+    direction: ltr;
 }
 table.setA{
-    color: #D5D5D5;
+    color: #111111;
 }
 table.setB{
-    color: #D5D5D5;
+    color: #111111;
 }
 th {
     font-weight: bold;
@@ -37,7 +37,7 @@ th, td {
     text-align: center;
 }
 td.A_or_B{
-    direction: rtl;
+    direction: ltr;
     font-weight: bold;
 }
 .table_container {
@@ -50,19 +50,19 @@ td.A_or_B{
     font-size: 36px;
 }
 p {
-    text-align: right;
+    text-align: left;
     line-height: 70px;
     margin-bottom: 28px;
     font-size: 42px;    
-    direction: rtl;
+    direction: ltr;
     
 }
 p.rtl{
-    direction: rtl;
+    direction: ltr;
     max-width: 80%;
 }
 .jspsych-display-element {
-    color: #D5D5D5;
+    color: #111111;
     font-family: Calibri, sans-serif;
 }
 .jspsych-content {
@@ -80,13 +80,13 @@ p.rtl{
 
 /* generic jspsych */
 div.sv_nav {
-    background-color: #1C1C1C;
-    color: #D5D5D5;
+    background-color: #ffffff;
+    color: #111111;
     font-family: Calibri, sans-serif;
 }
 div.sv_q {
-    background-color: #1C1C1C;
-    color: #D5D5D5;
+    background-color: #ffffff;
+    color: #111111;
     font-family: Calibri, sans-serif;
 }
 div.jspsych-content {

@@ -31,25 +31,6 @@
       }
     });
 
-    function getCursorPosition(event) {
-      bar_dimensions = document.getElementById("jspsych-html-slider-response-response").getBoundingClientRect()
-      left_x = bar_dimensions.left
-      right_x = bar_dimensions.right
-      WTP_amount = Math.round(WTP_MAX - (right_x - event.clientX)/ (WTP_BAR_SIZE/WTP_MAX))
-      if (WTP_amount < 0){
-        // if the mouse is beyond left side of slider, set to 0
-        WTP_amount = 0
-      } 
-      if (WTP_amount > WTP_MAX){
-        // if mouse is beyond right side of slider set to MAX
-        WTP_amount = WTP_MAX
-      }
-      wtp_div = document.getElementById("c_p_y")
-      if (wtp_div != null){
-        wtp_div.textContent = '₪'+WTP_amount;
-      }
-      document.getElementById("jspsych-html-slider-response-response").value = WTP_amount;
-    }
 
     // Initialize timeline
     var timeline = [];
@@ -188,7 +169,7 @@
         post_trial_gap: 250, 
         allow_click: true
     };
-    timeline.push(welcome);
+    // timeline.push(welcome);
 
     var initial_fixation = {
           type: jsPsychHtmlKeyboardResponse,
@@ -197,7 +178,7 @@
           data: {part: 'fixation'},
           trial_duration: INITIAL_FIXATION
     }
-    timeline.push(initial_fixation);
+    // timeline.push(initial_fixation);
 
     var example_part1 = {
         type: jsPsychHtmlSliderResponse,
@@ -218,12 +199,23 @@
         max: MAX_RESPONSE,
         slider_width: WTP_BAR_SIZE,
         labels: ['1', '2', '3', '4', '5', '6', '7'],
-        on_finish: function(data){
-          data.response = WTP_amount;
-        },
         post_trial_gap: 250
     };
     timeline.push(example_part1);
+
+    var manual_pause = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function(){
+        return `<p>Done.</p>`
+      },
+      choices: [' '],
+      data: {part: 'manual_scan_wait'},
+      post_trial_gap: 0,
+      on_finish: function(){
+        jsPsych.data.get().localSave('csv', `final_${date_string}_${sub_id}.csv`);
+      }
+    };
+    timeline.push(manual_pause);
 
     jsPsych.run(timeline);
   </script>

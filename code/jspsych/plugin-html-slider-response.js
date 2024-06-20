@@ -107,10 +107,10 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
       trial(display_element, trial) {
         // half of the thumb width value from jspsych.css, used to adjust the label positions
           var half_thumb_width = 7.5;
-          var html = '<div id="jspsych-html-slider-response-wrapper" oncontextmenu="" onmousemove="getCursorPosition(event)" style="">';
+          var html = '<div id="jspsych-html-slider-response-wrapper" oncontextmenu="" style="">';
           html += '<div id="jspsych-html-slider-response-stimulus">' + trial.stimulus + "</div>";
           html +=
-              '<div class="jspsych-html-slider-response-container" id="jspsych-html-slider-response-container" onmousemove="getCursorPosition(event)" style="position:relative; margin: 0 auto 3em auto;';
+              '<div class="jspsych-html-slider-response-container" id="jspsych-html-slider-response-container" style="position:relative; margin: 0 auto 3em auto;';
           if (trial.slider_width !== null) {
               html += "width:" + trial.slider_width + "px;";
           }
@@ -120,7 +120,7 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
           html += '">';
           /* Asaf added mouse tracking: onmousemove="getCursorPosition(event)" */
           html +=
-              '<input type="range" class="jspsych-slider" onmousemove="getCursorPosition(event)" style="margin-top: 30px;" value="' +
+              '<input type="range" class="jspsych-slider" style="margin-top: 30px;" value="' +
                   trial.slider_start +
                   '" min="' +
                   trial.min +
@@ -135,6 +135,12 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
               var percent_of_range = j * (100 / (trial.labels.length - 1));
               var percent_dist_from_center = ((percent_of_range - 50) / 50) * 100;
               var offset = (percent_dist_from_center * half_thumb_width) / 100;
+              var this_label = trial.labels[j];
+              if (j == 0) {
+                this_label = this_label + '<br>Very untrustworthy';
+              } else if (j == trial.labels.length - 1) {
+                this_label = this_label + '<br>Very trustworthy';
+              }
               html +=
                   '<div style="border: 1px solid transparent; display: inline-block; position: absolute; ' +
                       "left:calc(" +
@@ -146,7 +152,7 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
                       "px); text-align: center; width: " +
                       label_width_perc +
                       '%;">';
-              html += '<span style="text-align: center; font-size: 100%;">' + trial.labels[j] + "</span>";
+              html += '<span style="text-align: center; font-size: 100%;">' + this_label + "</span>";
               html += "</div>";
           }
           html += "</div>";
@@ -156,7 +162,7 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
               html += trial.prompt;
           }
           /* Asaf removed the submit button */
-          // add submit button
+        //   add submit button
           html +=
               '<button id="jspsych-html-slider-response-next" class="jspsych-btn" ' +
                   (trial.require_movement ? "disabled" : "") +
@@ -192,45 +198,23 @@ var jsPsychHtmlSliderResponse = (function (jspsych) {
                     response: response.response,
                 };
                 display_element.innerHTML = "";
-                /* Asaf adds that in end of trial stop listening to clicks */
-                // document
-                //     .querySelector(".jspsych-content-wrapper")
-                //     .removeEventListener("click", click_func, false);
-                // document
-                //     .querySelector(".jspsych-content-wrapper")
-                //     .removeEventListener("contextmenu", click_func, false);
                 // next trial
                 this.jsPsych.finishTrial(trialdata);
             };
             function click_func() {
-                console.log("click detected: " + WTP_amount)
                 var endTime = performance.now();
                 response.rt = Math.round(endTime - startTime);
-                response.response = display_element.querySelector("#jspsych-html-slider-response-response").valueAsNumber;
+                // valueAsNumber + 1 because the correct scale is 1 to 7 and the slider is 0 to 6
+                response.response = display_element.querySelector("#jspsych-html-slider-response-response").valueAsNumber + 1;
                 if (trial.response_ends_trial) {
                     end_trial();
                 }
             };
-            function track_mouse() {
-                var is_there_slider = document.querySelector("#jspsych-html-slider-response-response")
-                if (is_there_slider==null){
-                    // do nothing
-                }
-                else {
-                    return getCursorPosition(event);
-            }
-          };
-          /* Asaf added mouse tracking all over page */
-        //   document
-        //       .querySelector(".jspsych-content-wrapper")
-        //       .addEventListener("mousemove", track_mouse);
-          /* Asaf added that anywhere you click will end the trial */
-        //   document
-        //       .querySelector(".jspsych-content-wrapper")
-        //       .addEventListener("click", click_func)
-        //   document
-        //       .querySelector(".jspsych-content-wrapper")
-        //       .addEventListener("contextmenu", click_func);
+
+            var button = document
+                .getElementById("jspsych-html-slider-response-next");
+            button.addEventListener("click", click_func);
+
           if (trial.stimulus_duration !== null) {
               this.jsPsych.pluginAPI.setTimeout(() => {
                   display_element.querySelector("#jspsych-html-slider-response-stimulus").style.visibility = "hidden";

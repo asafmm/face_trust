@@ -49,6 +49,7 @@
     const FIXATION_TIME = 500;
     const JITTER = 250;
     const LABELS = ['-5', '-4', '-3', '-2', '-1', '0', '1', '2', '3', '4', '5'];
+    const IMAGE_INDEX = Array.from(new Array(100), (x, i) => i); // index from 0 to 99
 
     jsPsych.data.addProperties({subject_id: sub_id})
 
@@ -156,6 +157,15 @@
                 '../stimuli/white_male_faces/CM9_1.jpg']
     }
     timeline.push(preload);
+
+    let imageDict = {};
+    preload.images.forEach(path => {
+        let match = path.match(/CM(\d+)_1\.jpg/);
+        if (match) {
+            let key = parseInt(match[1], 10);
+            imageDict[key] = path;
+        }
+    });
 
     var welcome = {
         type: jsPsychHtmlKeyboardResponse,
@@ -296,10 +306,9 @@
 
     var real_task = {
       timeline: [trial, fixation],
-      timeline_variables: preload.images,
-      // timeline_variables: evaluation_stimuli.slice(0, 2),
+      timeline_variables: imageDict,
       randomize_order: true
-    }
+    };
     timeline.push(fixation);
     timeline.push(real_task);
 
